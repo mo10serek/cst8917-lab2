@@ -66,12 +66,47 @@ def analyze_pdf(blobName):
     return doc
 
 @my_app.activity_trigger(input_name='results')
-@my_app.generic_input_binding(arg_name="response", type="textCompletion", data_type=func.DataType.STRING, prompt="Can you explain what the following text is about? {results}", model = "%CHAT_MODEL_DEPLOYMENT_NAME%")
-def summarize_text(results, response: str):
-    logging.info(f"in summarize_text activity")
-    response_json = json.loads(response)
-    logging.info(response_json['content'])
-    return response_json
+def summarize_text(results):
+    logging.info("in summarize_text activity")
+
+    # Load environment variables
+    endpoint = os.environ["AZURE_OPENAI_ENDPOINT"].rstrip('/')
+    api_key = os.environ["AZURE_OPENAI_KEY"]
+    deployment = os.environ["CHAT_MODEL_DEPLOYMENT_NAME"]
+
+    # Build full API URL
+    api_url = f"{endpoint}/openai/deployments/{deployment}/chat/completions?api-version=2025-01-01-preview"
+
+    # Create headers
+    headers = {
+        "Content-Type": "application/json",
+        "api-key": api_key
+    }
+
+    # Define the prompt and message payload
+    messages = [
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": f"Can you explain what the following text is about?\n\n{results}"}
+    ]
+
+    payload = {
+        "messages": messages,
+        "temperature": 0.7,
+        "max_tokens": 500
+    }
+
+    try:
+        response = requests.post(api_url, headers=headers, json=payload)
+        response.raise_for_status()
+        response_json = response.json()
+
+        summary = response_json["choices"][0]["message"]["content"]
+        logging.info(f"Summary: {summary}")
+        return summary
+
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error calling Azure OpenAI: {e}")
+        return f"Error: {e}"
 
 @my_app.activity_trigger(input_name='results')
 def write_doc(results):
@@ -83,6 +118,6 @@ def write_doc(results):
     sanitizedSummary = summary.replace(".", "-")
     fileName = sanitizedSummary + ".txt"
 
-    logging.info("uploading to blob" + results['summary']['content'])
-    container_client.upload_blob(name=fileName, data=results['summary']['content'])
+    logging.info("uploading to blob" + results['summary'])
+    container_client.upload_blob(name=fileName, data=results['summary'])
     return str(summary + ".txt")
