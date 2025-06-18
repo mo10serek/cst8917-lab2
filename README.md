@@ -94,3 +94,7 @@ After you created and connected the rescores, deploy and run the function again.
 # Changes
 
 Change the summarize_text function so that it uses the endpoint string and key to connect to gpt model in OpenAI instead of using genetics that uses the deployment model name to connect.
+
+# Video Demo
+
+[deploying PDF summary durable function](https://youtu.be/wAOwriD76I8).
