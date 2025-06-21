@@ -97,4 +97,4 @@ Change the summarize_text function so that it uses the endpoint string and key t
 
 # Video Demo
 
-[deploying PDF summary durable function](https://youtu.be/wAOwriD76I8).
+[deploying PDF summary durable function](https://youtu.be/GXQsaanJG4k).
